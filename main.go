@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"strings"
 )
 
@@ -29,27 +30,44 @@ func (m *Helix) WithHelixSecret(ctx context.Context, ctr *Container, helixCreden
 	*/
 	var apiKey string
 	var apiUrl string = "https://app.tryhelix.ai"
-	lines := strings.Split("\n", credsFile)
+	var activeTools string
+	lines := strings.Split(credsFile, "\n")
 	for _, line := range lines {
-		if strings.Contains("HELIX_API_KEY=", line) {
-			parts := strings.Split("=", line)
-			apiKey = parts[1]
+		fmt.Println("LINE:", line)
+		if len(line) > 0 && string(line[0]) == "#" {
+			continue
 		}
-		if strings.Contains("HELIX_API_URL=", line) {
-			parts := strings.Split("=", line)
-			apiUrl = parts[1]
+		if strings.Contains(line, "HELIX_API_KEY=") {
+			parts := strings.SplitN(line, "=", 2)
+			if len(parts) > 1 {
+				apiKey = parts[1]
+			}
+		}
+		if strings.Contains(line, "HELIX_API_URL=") {
+			parts := strings.SplitN(line, "=", 2)
+			if len(parts) > 1 {
+				apiUrl = parts[1]
+			}
+		}
+		if strings.Contains(line, "HELIX_ACTIVE_TOOLS=") {
+			parts := strings.SplitN(line, "=", 2)
+			if len(parts) > 1 {
+				activeTools = parts[1]
+			}
 		}
 	}
 	secret := dag.SetSecret("helix-api-key", apiKey)
 	ctr = ctr.
 		WithSecretVariable("HELIX_API_KEY", secret).
-		WithEnvVariable("HELIX_API_URL", apiUrl)
+		WithEnvVariable("HELIX_API_URL", apiUrl).
+		WithEnvVariable("HELIX_ACTIVE_TOOLS", activeTools)
 	return ctr, nil
 }
 
 func (m *Helix) HelixCli(ctx context.Context, helixCredentials *File) (*Container, error) {
 	ctr := dag.Container().
-		From("europe-docker.pkg.dev/helixml/helix/controlplane:latest")
+		// From("helix-controlplane:dev")
+		From("europe-docker.pkg.dev/helixml/helix/controlplane-dev:dev002")
 	ctr, err := m.WithHelixSecret(ctx, ctr, helixCredentials)
 	if err != nil {
 		return nil, err
@@ -65,6 +83,7 @@ func (m *Helix) Run(ctx context.Context, prompt string, helixCredentials *File) 
 	}
 	// TODO: json output from run cmd?
 	return ctr.
+		WithEntrypoint([]string{"/helix"}).
 		WithExec([]string{"run", "--prompt", prompt}).
 		Stdout(ctx)
 }
