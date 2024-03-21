@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"strings"
 )
 
@@ -33,7 +32,6 @@ func (m *Helix) WithHelixSecret(ctx context.Context, ctr *Container, helixCreden
 	var activeTools string
 	lines := strings.Split(credsFile, "\n")
 	for _, line := range lines {
-		fmt.Println("LINE:", line)
 		if len(line) > 0 && string(line[0]) == "#" {
 			continue
 		}
