@@ -1,3 +1,9 @@
+// LLM inference in Helix.ml from Dagger
+//
+// This module lets you call LLM inference on open source models in Helix.ml
+//
+// For more info, see https://helixml.substack.com/p/introducing-the-helix-cli-and-dagger
+
 package main
 
 import (
